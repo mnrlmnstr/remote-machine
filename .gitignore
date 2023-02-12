@@ -1,0 +1,16 @@
+# IDEs
+.idea/*
+.vscode
+
+# Python
+db.sqlite3
+*.db
+*.pyc
+.coverage
+/venv/
+/tmp/
+/bot/tmp/
+__pycache__/
+.python-version
+
+.DS_Store
