@@ -1,34 +1,15 @@
 import asyncio
-import platform
 import sys
-
-try:
-    import msvcrt
-except ModuleNotFoundError:
-    pass
-
-try:
-    import termios
-    import tty
-except ModuleNotFoundError:
-    pass
+import tty
 
 from pybricksdev.connections.pybricks import PybricksHub, StatusFlag
 from pybricksdev.ble import find_device
 
 
 def read_key():
-    if platform.system() == 'Windows':
-        return msvcrt.getch()
-
     fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-
-    try:
-        tty.setraw(fd)
-        return sys.stdin.read(1)
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    tty.setraw(fd)
+    return sys.stdin.read(1)
 
 
 async def main():
@@ -38,8 +19,7 @@ async def main():
 
     device = await find_device()
     await hub.connect(device)
-
-    print(device)
+    print('Device: ', device)
 
     try:
         forwarder_task = asyncio.create_task(forwarder(hub))
@@ -73,14 +53,7 @@ async def forwarder(hub: PybricksHub):
     # Keyboard command input loop
     while True:
         command = await loop.run_in_executor(None, read_key)
-
-        # Try to send to the receiving hub
-        try:
-            await hub.write(bytes([ord(command)]))
-            print('send', command)
-        except:
-            pass
-
+        await hub.write(bytes([ord(command)]))
 
 # start it up
 asyncio.run(main())
