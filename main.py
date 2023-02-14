@@ -9,27 +9,29 @@ from pybricksdev.connections.pybricks import PybricksHub, StatusFlag
 from pybricksdev.ble import find_device
 from aiohttp import web
 
-from rtcbot import RTCConnection, getRTCBotJS
+from rtcbot import RTCConnection, getRTCBotJS, CVCamera, CVDisplay
 
 loop = asyncio.get_event_loop()
 
 routes = web.RouteTableDef()
 conn = RTCConnection()
+camera = CVCamera()
+conn.video.putSubscription(camera)
 
 a = [0, 0, 0, 0]
+
 
 @conn.subscribe
 def onMessage(msg):
     global a
     a = list(msg)
 
-# Serve the RTCBot javascript library at /rtcbot.js
+
 @routes.get("/rtcbot.js")
 async def rtcbotjs(request):
     return web.Response(content_type="application/javascript", text=getRTCBotJS())
 
 
-# This sets up the connection
 @routes.post("/connect")
 async def connect(request):
     clientOffer = await request.json()
@@ -55,9 +57,14 @@ async def index(request):
             <main class="p-4">
                 <h3 class="text-2xl font-bold mb-2">Gamepad</h3>
                 <div id="status" class="tabular-nums">Press any button</div>
+                <video autoplay playsinline muted controls></video>
             </main>
             <script>
                 var conn = new rtcbot.RTCConnection();
+                
+                conn.video.subscribe(function(stream) {
+                    document.querySelector("video").srcObject = stream;
+                });
 
                 async function connect() {
                     let offer = await conn.getLocalDescription();
@@ -145,6 +152,7 @@ async def forwarder(hub: PybricksHub):
 
 async def cleanup(app=None):
     await conn.close()
+    await camera.close()
 
 
 app = web.Application()

@@ -14,8 +14,6 @@ print('Voltage: ', hub.battery.voltage())
 left = Motor(Port.B)
 right = Motor(Port.A, Direction.COUNTERCLOCKWISE)
 
-WHEEL_DIAMETER = 54
-
 # left.control.limits(acceleration=1000)
 # right.control.limits(acceleration=1000)
 
