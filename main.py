@@ -11,35 +11,35 @@ from aiohttp import web
 
 from rtcbot import RTCConnection, getRTCBotJS, CVCamera, CVDisplay
 
-loop = asyncio.get_event_loop()
-
-routes = web.RouteTableDef()
-conn = RTCConnection()
 camera = CVCamera()
+loop = asyncio.get_event_loop()
+routes = web.RouteTableDef()
+
+conn = RTCConnection()
 conn.video.putSubscription(camera)
 
-a = [0, 0, 0, 0]
+gamepad_axes = []
 
 
 @conn.subscribe
-def onMessage(msg):
-    global a
-    a = list(msg)
+def on_message(msg):
+    global gamepad_axes
+    gamepad_axes = msg
 
 
-@routes.get("/rtcbot.js")
+@routes.get('/rtcbot.js')
 async def rtcbotjs(request):
-    return web.Response(content_type="application/javascript", text=getRTCBotJS())
+    return web.Response(content_type='application/javascript', text=getRTCBotJS())
 
 
-@routes.post("/connect")
+@routes.post('/connect')
 async def connect(request):
-    clientOffer = await request.json()
-    serverResponse = await conn.getLocalDescription(clientOffer)
-    return web.json_response(serverResponse)
+    client_offer = await request.json()
+    server_response = await conn.getLocalDescription(client_offer)
+    return web.json_response(server_response)
 
 
-@routes.get("/")
+@routes.get('/')
 async def index(request):
     return web.Response(
         content_type="text/html",
@@ -82,7 +82,6 @@ async def index(request):
                 }
                 connect();
 
-                
                 setInterval(() => {
                     const gamepads = navigator.getGamepads()
                     const gamepad = gamepads[0]
@@ -123,7 +122,6 @@ async def hub_init():
         finally:
             forwarder_task.cancel()
     finally:
-        # Disconnect from the hub
         await hub.disconnect()
         print('main: Stop')
 
@@ -143,16 +141,18 @@ async def forwarder(hub: PybricksHub):
 
     print('forwarder: Hub Running')
 
-    global a
+    global gamepad_axes
     while True:
         await asyncio.sleep(0.1)
-        val = f'{a};'
-        await hub.write(str(val).encode())
+
+        axes = list(gamepad_axes)
+        if bool(axes):
+            command = f'd:{axes[1]}:{axes[3]};'
+            await hub.write(str(command).encode())
 
 
-async def cleanup(app=None):
+async def cleanup():
     await conn.close()
-    await camera.close()
 
 
 app = web.Application()

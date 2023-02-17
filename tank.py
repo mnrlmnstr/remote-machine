@@ -14,9 +14,6 @@ print('Voltage: ', hub.battery.voltage())
 left = Motor(Port.B)
 right = Motor(Port.A, Direction.COUNTERCLOCKWISE)
 
-# left.control.limits(acceleration=1000)
-# right.control.limits(acceleration=1000)
-
 hub.light.on(Color.GREEN)
 
 speed = 0
@@ -26,10 +23,27 @@ command_buffer = ''
 
 
 def input_handler(command):
-    axes = command.strip('[]').replace('"', '').replace(' ', '').split(',')
-    print(axes[1], axes[3])
-    left.run(-1500*float(axes[1]))
-    right.run(-1500*float(axes[3]))
+    command_list = command.split(':')
+
+    if command_list[0] == "d":
+        try:
+            left_speed = float(command_list[1]) * -1500
+            right_speed = float(command_list[2]) * -1500
+
+            if left_speed == 0:
+                left.stop()
+            else:
+                left.run(left_speed)
+                print('l:', left.speed())
+
+            if right_speed == 0:
+                right.stop()
+            else:
+                right.run(right_speed)
+                print('r:', right.speed())
+
+        except ValueError:
+            print("Skip Invalid command {}".format(command))
 
 
 def update_input(char):
@@ -42,7 +56,7 @@ def update_input(char):
 
 
 while True:
-    while gamepad.poll(1):  # times out after 100ms
+    while gamepad.poll(1):
         char = stdin.read(1)
         if char is not None:
             update_input(char)
