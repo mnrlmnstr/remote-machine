@@ -1,20 +1,15 @@
 import asyncio
-import time
-import sys
-import tty
-
-from concurrent.futures import ProcessPoolExecutor
 
 from pybricksdev.connections.pybricks import PybricksHub, StatusFlag
 from pybricksdev.ble import find_device
 from aiohttp import web
 
-from rtcbot import RTCConnection, getRTCBotJS, CVCamera, CVDisplay
+from rtcbot import RTCConnection, getRTCBotJS, CVCamera
 
-camera = CVCamera()
 loop = asyncio.get_event_loop()
 routes = web.RouteTableDef()
 
+camera = CVCamera(width=352, height=288)
 conn = RTCConnection()
 conn.video.putSubscription(camera)
 
@@ -153,6 +148,7 @@ async def forwarder(hub: PybricksHub):
 
 async def cleanup():
     await conn.close()
+    await camera.close()
 
 
 app = web.Application()
